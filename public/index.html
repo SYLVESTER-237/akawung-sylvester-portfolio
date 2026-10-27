@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Modern blue portfolio website">
+<title>Spark — Creative Portfolio</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth;scroll-padding-top:70px}
+body{font-family:Arial,sans-serif;background:#050b4d;color:#eef6ff;line-height:1.6}
+.wrap{width:min(1000px,92%);margin:auto}.zoom{cursor:zoom-in}
+nav{position:fixed;top:0;left:0;right:0;z-index:5;background:rgba(5,11,77,.94);height:60px}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:100%}
+.logo{
+  font-weight:800;
+  font-size:23px;
+  letter-spacing:1px;
+  color:#1e90d3;
+  text-decoration:none;
+}
+.links{display:flex;gap:18px}.links a{color:#eef6ff;text-decoration:none;font-size:13px;font-weight:bold}
+.menu{display:none;background:none;border:0;color:#fff;font-size:26px}
+.hero{position:relative;margin-top:60px;aspect-ratio:2048/768;min-height:460px;display:flex;align-items:center;overflow:hidden;background:linear-gradient(135deg,#101e85,#0877bd)}
+#cover{position:absolute;inset:0;z-index:0;background:center/cover no-repeat}
+.hero{position:relative;margin-top:60px;aspect-ratio:2048/768;min-height:430px;display:flex;align-items:center;overflow:hidden;background:linear-gradient(135deg,#101e85,#0877bd)}
+#cover{position:absolute;inset:0;z-index:0;background:center/cover no-repeat}
+.hero:after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:linear-gradient(90deg,rgba(2,6,40,.6),transparent 55%)}
+.hero .hero-content{position:relative;z-index:1;display:flex;align-items:center;gap:3vw;width:100%;max-width:none;margin:0;padding:0 4% 0 6%;pointer-events:none}
+.hero-content a,.hero-content img{pointer-events:auto}
+.hero-content>div{max-width:min(560px,36vw)}
+#avatar{flex:none;width:clamp(130px,15vw,290px);aspect-ratio:1;border-radius:50%;border:4px solid #1e90ff;box-shadow:0 0 30px rgba(30,144,255,.6);object-fit:cover;background:#0b1768}
+.eyebrow{letter-spacing:5px;font-size:clamp(10px,.9vw,13px);color:#d7e8ff}
+.hero h1{font-size:clamp(30px,4.2vw,86px);line-height:.95;font-weight:800;color:#fff;margin:6px 0 12px;text-shadow:0 2px 12px rgba(0,0,0,.5)}
+.hero h1 span{display:block;color:#1e90ff}
+.roles{color:#eef6ff;font-size:clamp(12px,1.1vw,17px);text-shadow:0 1px 6px rgba(0,0,0,.7)}
+.slogan{font-style:italic;color:#4fc3ff;font-size:clamp(12px,1.1vw,17px);margin:12px 0 16px;text-shadow:0 1px 6px rgba(0,0,0,.7)}
+.hero-btns{display:flex;gap:12px;flex-wrap:wrap}
+.hero .btn{padding:11px 18px;font-size:clamp(12px,1vw,15px)}
+.social{display:flex;gap:12px;margin-top:18px}
+.social a{width:38px;height:38px;border:2px solid #1e90ff;border-radius:50%;display:grid;place-items:center;text-decoration:none;font-size:17px}
+@media(max-width:800px){.hero{aspect-ratio:auto;padding:50px 0 40px}.hero .hero-content{flex-direction:column;text-align:center;padding:0 5%}.hero-content>div{max-width:100%}#avatar{width:150px}.hero h1{font-size:40px}.roles,.slogan{font-size:14px}.hero-btns,.social{justify-content:center}}
+.profile{display:flex;align-items:flex-end;gap:20px;margin-top:-110px;padding-bottom:10px;flex-wrap:wrap}
+.profile h1{font-size:28px}.profile p{color:#aebbd7}.profile>div{flex:1}
+.btn{display:inline-block;background:#2c9fe8;color:#03104e;padding:12px 20px;border:0;border-radius:4px;font-weight:bold;text-decoration:none;cursor:pointer;font-size:15px}
+.welcome{
+  padding:30px 0 38px;
+  text-align:center;
+  color:#c3d0ea;
+}
+
+.welcome-title{
+  font-size:clamp(30px,4vw,52px);
+  font-weight:800;
+  line-height:1.05;
+  letter-spacing:1px;
+  margin-bottom:14px;
+}
+
+.welcome-title span{
+  display:block;
+  color:#fff;
+}
+
+.welcome-title .blue{
+  color:#65c8ff;
+}
+
+.welcome p{
+  max-width:950px;
+  margin:0 auto;
+  font-size:clamp(14px,1.3vw,18px);
+  font-weight:600;
+  line-height:1.6;
+  color:#c3d0ea;
+}
+section{padding:60px 0}.dark{background:#030838}
+.label{font-size:18px;font-weight:bold;letter-spacing:3px;color:#65c8ff;margin-bottom:12px}
+h2{font-size:clamp(28px,4.5vw,44px);line-height:1.1;margin-bottom:22px}h2 span{color:#65c8ff}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:50px}.t{color:#aebbd7;margin-bottom:12px}
+.stats{display:flex;gap:40px;margin-top:26px}.stats b{display:block;font-size:32px;color:#65c8ff}.stats small{font-size:10px;letter-spacing:2px;color:#aebbd7}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.cards article{background:#0b1768;border:1px solid #14247e;padding:26px}.cards b{color:#65c8ff}.cards h3{margin:14px 0 8px}.cards p{color:#aebbd7}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.filters button{background:none;border:1px solid #2c9fe8;color:#eef6ff;padding:6px 14px;border-radius:20px;cursor:pointer}.filters .on{background:#2c9fe8;color:#03104e}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.card{background:#071253;border:1px solid #18287c}.card img{width:100%;height:260px;object-fit:cover;display:block}.card div{padding:14px}.card small{color:#65c8ff;font-size:11px;letter-spacing:1px}
+.review{max-width:720px;background:#081253;border-left:4px solid #2c9fe8;padding:32px}.review p{font-size:21px;margin:10px 0 16px;color:#c3d0ea}.review .q{font-size:60px;color:#65c8ff;line-height:.5}
+.contact{display:grid;grid-template-columns:1fr 1fr;gap:50px}.info{display:flex;gap:26px;flex-wrap:wrap;margin-top:24px}.info b{font-size:10px;letter-spacing:2px;color:#65c8ff}.info p{font-size:14px}
+form{display:grid;gap:12px}input,textarea{padding:13px;background:#07104e;border:1px solid #20338f;color:#fff;font:inherit;width:100%}
+#box{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9;justify-content:center;align-items:center}#box img{max-width:94%;max-height:94%}
+#box span{position:absolute;top:14px;right:24px;font-size:44px;cursor:pointer}
+footer{padding:22px 0;background:#020630;text-align:center;color:#8998bd;font-size:12px}footer a{color:inherit}
+@media(max-width:800px){.links{display:none;position:absolute;top:60px;right:4%;background:#07104e;padding:14px;flex-direction:column;width:200px;border:1px solid #1b2c80}.links.open{display:flex}.menu{display:block}.two,.contact{grid-template-columns:1fr;gap:26px}.profile{flex-direction:column;align-items:center;text-align:center}}
+</style>
+</head>
+<body>
+<nav><div class="wrap"><a class="logo" href="#home"><span id="logoName">AKAWUNG SYLVESTER</span><span>.</span></a>
+<button class="menu" aria-label="Open menu" onclick="document.getElementById('links').classList.toggle('open')">☰</button>
+<div class="links" id="links" onclick="this.classList.remove('open')">
+<a href="#home">HOME</a><a href="#about">ABOUT ME</a><a href="#why">WHY ME</a><a href="#projects">PROJECTS</a><a href="#reviews">REVIEWS</a><a href="#contact">CONTACT</a></div></div></nav>
+
+<div id="home" class="hero">
+  <div id="cover"></div>
+  <div class="wrap hero-content">
+    <img id="avatar" alt="Profile photo">
+    <div>
+      <div class="eyebrow">SOFTWARE ENGINEER</div>
+      <h1 id="name">AKAWUNG SYLVESTER</h1>
+      <p class="roles" id="tagline">Software Engineer | Web Developer | Graphic Designer | PowerPoint Builder | Problem Solver | Tech Enthusiast</p>
+      <p class="slogan">Turning ideas into digital solutions.<br>Let's build something great together.</p>
+      <div class="hero-btns">
+        <a class="btn" href="#projects">VIEW PROJECTS →</a>
+        <a class="btn" style="background:none;color:#fff;border:1px solid #2c9fe8" href="#contact">CONTACT ME</a>
+      </div>
+      <div class="social">
+        <a href="https://wa.me/237651018413" target="_blank" rel="noopener" aria-label="WhatsApp">💬</a>
+        <a href="mailto:akawungspark@gmail.com" aria-label="Email">✉️</a>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="wrap">
+  <div class="welcome">
+    <div class="welcome-title">
+      <span>WELCOME TO MY</span>
+      <span class="blue">CREATIVE WORLD</span>
+    </div>
+    <p>Software engineering, web design and creative digital experiences — built with ideas, precision and personality.</p>
+  </div>
+</div>
+
+<section id="about"><div class="wrap"><div class="label">01 / ABOUT ME</div><div class="two">
+<div><h2>I turn ideas into <span>digital experiences.</span></h2></div>
+<div>
+<p class="t">Meet <b>AKAWUNG SYLVESTER</b> a highly passionate and versatile Web Developer, Graphic Designer, and Digital Creator with a strong talent for turning ideas into professional, creative, and impactful digital solutions.</p>
+<p class="t">I am not just a developer or designer — I have the creativity, technical skills, and dedication to transform concepts into websites, graphics, portfolios, and digital projects that look professional and deliver real value. I combine technology and creativity to create solutions that are modern, functional, attractive, and easy to use.</p>
+<p class="t">I specialize in Website Creation,<b> Web Development, Graphic Design, Portfolio Building, CV Design, Flyers, Posters, Business Cards, and Professional Document Creation.</b> I also provide reliable <b>typing, formatting, project development, and digital editing services,</b> ensuring that every project is carefully prepared and presented to a high standard.</p>
+<p class="t">My work is characterized by <b>creativity, precision, professionalism, and attention to detail.</b> Whether I am developing a website, designing a flyer, creating a portfolio, preparing a CV, or working on a software project, I focus on understanding the client's needs and transforming their ideas into a polished final product.</p>
+<p class="t">With a growing foundation in <b>Software Engineering and modern digital technologies,</b> I continue to improve my technical and creative abilities by working on real-world projects and exploring new tools and technologies. My goal is to create digital solutions that not only look impressive but also communicate clearly, solve problems, and provide a great user experience.</p>
+<p class="t"><b>Let's work together and turn your ideas into reality!</b> Whether you need a professional website, an attractive flyer, a modern portfolio, a powerful CV, a software project, or quality digital work,<b>your vision + my skills = a solution worth being proud of...</b></p>
+<div class="stats"><div><b>40+</b><small>PROJECT IDEAS</small></div><div><b>100%</b><small>CREATIVITY</small></div><div><b>24/7</b><small>LEARNING</small></div></div>
+</div></div></div></section>
+
+<section id="why" class="dark"><div class="wrap"><div class="label">02 / WHY ME</div><h2>What makes my work <span>different?</span></h2>
+<div class="cards">
+<article><b>01</b><h3>Creative</h3><p>Original visual ideas with a strong focus on modern presentation.</p></article>
+<article><b>02</b><h3>Reliable</h3><p>Clean structure, responsive layouts and attention to the small details.</p></article>
+<article><b>03</b><h3>Always Learning</h3><p>I keep improving my skills and exploring better technologies.</p></article>
+<article><b>04</b><h3>Consistency quality and originality</h3><p>I believe great work comes from consistency, quality and originality. I stay committed throughout every project, maintain a high standard in everything I create, and bring unique ideas that make my work stand out.</p></article>
+</div></div></section>
+
+<section id="projects"><div class="wrap"><div class="label">03 / MY WORK & EXPERIENCE</div><h2>My <span>Designs.</span></h2>
+<p class="t" style="max-width:650px;margin-bottom:26px">A collection of designs, creative projects and digital experiences I have created using my skills and creativity.</p>
+<div class="filters" id="filters"></div><div class="gallery" id="gallery"></div></div></section>
+
+<section id="reviews" class="dark"><div class="wrap"><div class="label">04 / REVIEWS</div><h2>What people <span>say.</span></h2>
+<div class="review"><div class="q">“</div><p>Great creativity, strong attention to detail and a real desire to make the final product better.</p><strong style="font-size:11px;letter-spacing:2px">CLIENT / COLLEAGUE</strong></div></div></section>
+
+<section id="contact"><div class="wrap"><div class="label">05 / CONTACT</div><div class="contact">
+<div><h2>Let's build something <span>great.</span></h2><p class="t">Have an idea, project or collaboration in mind? Send me a message.</p>
+<div class="info"><p><b>EMAIL</b><br>akawungspark@gmail.com</p><p><b>PHONE</b><br>+237 651 018 413</p><p><b>LOCATION</b><br>Yaoundé, CAMEROON</p></div>
+<a class="btn" style="background:#25d366;color:#fff;margin-top:22px" href="https://wa.me/237651018413?text=Hello%20Sylvester%2C%20I%20saw%20your%20portfolio%20and%20I%20need%20a%20design." target="_blank" rel="noopener">💬 CHAT ON WHATSAPP</a></div>
+<form action="https://formspree.io/f/mzebbyvz" method="POST">
+<input type="text" name="name" placeholder="Your name" required><input type="email" name="email" placeholder="Your email" required>
+<input type="tel" name="whatsapp" placeholder="Your WhatsApp number " required>
+<textarea name="message" placeholder="Tell me about your project..." rows="6" required></textarea>
+<button class="btn" type="submit">SEND MESSAGE →</button></form></div></div></section>
+
+<footer>© <span id="fname">AKAWUNG SYLVESTER</span> · 
+<div id="box" onclick="if(event.target.tagName!=='IMG')cl()"><span onclick="cl()">&times;</span><img id="big" alt=""></div>
+
+<script>
+const $=id=>document.getElementById(id);
+function op(s){if(s){$('big').src=s;$('box').style.display='flex'}}
+function cl(){$('box').style.display='none'}
+document.addEventListener('keydown',e=>e.key==='Escape'&&cl());
+fetch('/api/data').then(r=>r.json()).catch(()=>({})).then(d=>{
+  if(d.name){const w=d.name.split(' ');$('name').textContent=w[0];if(w.length>1){const s=document.createElement('span');s.textContent=w.slice(1).join(' ');$('name').append(s)}$('logoName').textContent=d.name;$('fname').textContent=d.name}
+if(d.tagline)$('tagline').textContent=d.tagline;
+if(d.cover){const u='/uploads/'+d.cover;$('cover').style.backgroundImage="url('"+u+"')";$('cover').classList.add('zoom');$('cover').onclick=()=>op(u)}
+if(d.profile){const u='/uploads/'+d.profile;$('avatar').src=u;$('avatar').classList.add('zoom');$('avatar').onclick=()=>op(u)}else $('avatar').removeAttribute('src');
+  if(d.profile){const u='/uploads/'+d.profile;$('avatar').src=u;$('avatar').classList.add('zoom');$('avatar').onclick=()=>op(u)}else $('avatar').removeAttribute('src');
+  const items=(d.designs||[]).slice().reverse(),cats=[...new Set(items.map(x=>x.category))];
+  function show(c){$('gallery').innerHTML='';
+    items.filter(x=>c==='All'||x.category===c).slice(0,c==='All'?12:undefined).forEach(x=>{
+      const k=document.createElement('div');k.className='card';
+      const i=document.createElement('img');i.className='zoom';i.src='/uploads/'+x.file;i.alt=x.title;i.loading='lazy';i.onclick=()=>op(i.src);
+      const t=document.createElement('div'),s=document.createElement('small'),h=document.createElement('h3');
+      s.textContent=x.category.toUpperCase();h.textContent=x.title;t.append(s,h);k.append(i,t);$('gallery').append(k)});
+    if(c==='All'&&items.length>12){const n=document.createElement('p');n.className='t';n.style.gridColumn='1/-1';n.textContent='Showing the latest 12 designs. Choose a category above to see more.';$('gallery').append(n)}
+    [...$('filters').children].forEach(b=>b.classList.toggle('on',b.textContent===c))}
+  if(cats.length)['All',...cats].forEach(c=>{const b=document.createElement('button');b.textContent=c;b.onclick=()=>show(c);$('filters').append(b)});
+  show('All')});
+</script>
+<a href="https://wa.me/237651018413" target="_blank" rel="noopener" aria-label="Chat on WhatsApp" style="position:fixed;right:18px;bottom:18px;z-index:8;background:#25d366;color:#fff;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font-size:30px;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.4)">💬</a>
+</body></html>
+if(d.name), if(d.tagline), if(d.cover

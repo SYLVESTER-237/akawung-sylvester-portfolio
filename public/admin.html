@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin</title>
+<style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;background:#050b4d;color:#eef6ff;margin:0;padding:20px}
+.w{max-width:800px;margin:auto}h1{font-size:24px}h2{font-size:18px;color:#65c8ff;margin:0 0 10px}
+.b{background:#0b1768;border:1px solid #14247e;padding:18px;margin-bottom:16px}
+input,button{width:100%;padding:11px;margin:5px 0;font:inherit;border:1px solid #20338f;background:#07104e;color:#fff}
+button{background:#2c9fe8;color:#03104e;font-weight:bold;cursor:pointer;border:0}a{color:#65c8ff}
+#msg p{padding:10px;margin:0 0 12px}.ok{background:#0b4d3a}.er{background:#6b1420}
+.it{display:flex;gap:12px;align-items:center;border-top:1px solid #18287c;padding:8px 0}.it img{width:60px;height:60px;object-fit:cover}.it span{flex:1}.it button{width:100px}
+.th{max-width:100%;max-height:140px;display:block;margin-bottom:8px}</style></head><body><div class="w">
+<div id="login" class="b" style="max-width:340px;margin:12vh auto;display:none"><h1>Admin login</h1><div id="lmsg"></div>
+<input type="password" id="pw" placeholder="Password"><button onclick="login()">Log in</button></div>
+<div id="panel" style="display:none">
+<h1>Manage my portfolio</h1><p><a href="/" target="_blank">View site</a> · <a href="#" onclick="logout()">Log out</a></p><div id="msg"></div>
+<div class="b"><h2>Cover photo (best 1600 × 600)</h2><img id="tc" class="th" hidden><input type="file" id="fc" accept="image/*"><button onclick="send('cover','fc')">Upload cover</button></div>
+<div class="b"><h2>Profile photo and details</h2><img id="tp" class="th" style="border-radius:50%;width:110px;height:110px;object-fit:cover" hidden>
+<input type="file" id="fp" accept="image/*"><button onclick="send('profile','fp')">Upload profile photo</button>
+<input id="nm" placeholder="Your name"><input id="tg" placeholder="Short line under your name"><button onclick="saveText()">Save details</button></div>
+<div class="b"><h2>Add a design</h2><input type="file" id="fd" accept="image/*"><input id="dt" placeholder="Title"><input id="dc" placeholder="Category (Wedding, Logo, Flyer...)">
+<button onclick="addDesign()">Publish design</button></div>
+<div class="b"><h2>Published designs (<span id="n">0</span>)</h2><div id="list"></div></div></div></div>
+<script>
+const $=id=>document.getElementById(id);
+function say(t,ok){$('msg').innerHTML='<p class="'+(ok?'ok':'er')+'"></p>';$('msg').firstChild.textContent=t;scrollTo(0,0)}
+async function call(url,opt){const r=await fetch(url,opt);const j=await r.json().catch(()=>({}));if(r.status===401&&url!=='/api/login'){start();throw new Error(j.error)}if(!r.ok)throw new Error(j.error||'Something went wrong.');return j}
+async function start(){const m=await call('/api/me').catch(()=>({}));$('login').style.display=m.in?'none':'block';$('panel').style.display=m.in?'block':'none';if(m.in)refresh()}
+async function login(){try{await call('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('pw').value})});start()}catch(e){$('lmsg').innerHTML='<p class="er"></p>';$('lmsg').firstChild.textContent=e.message}}
+async function logout(){await call('/api/logout',{method:'POST'});start()}
+async function refresh(){const d=await (await fetch('/api/data')).json();
+  for(const [k,i] of [['cover','tc'],['profile','tp']]){$(i).hidden=!d[k];if(d[k])$(i).src='/uploads/'+d[k]}
+  $('nm').value=d.name;$('tg').value=d.tagline;$('n').textContent=d.designs.length;$('list').innerHTML='';
+  d.designs.forEach(x=>{const r=document.createElement('div');r.className='it';const i=document.createElement('img');i.src='/uploads/'+x.file;
+    const s=document.createElement('span');s.textContent=x.title+' — '+x.category;const b=document.createElement('button');b.textContent='Delete';
+    b.onclick=async()=>{if(confirm('Delete this design?')){await call('/api/design/'+x.id,{method:'DELETE'});say('Design deleted.',1);refresh()}};r.append(i,s,b);$('list').append(r)})}
+async function send(path,fid,extra){const f=$(fid).files[0];if(!f)return say('Choose an image first.');const fd=new FormData();fd.append('p',f);
+  for(const k in (extra||{}))fd.append(k,extra[k]);
+  try{await call('/api/'+path,{method:'POST',body:fd});$(fid).value='';say('Saved.',1);refresh();return 1}catch(e){say(e.message)}}
+async function addDesign(){if(await send('design','fd',{title:$('dt').value,category:$('dc').value})){$('dt').value='';$('dc').value=''}}
+async function saveText(){try{await call('/api/text',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('nm').value,tagline:$('tg').value})});say('Details saved.',1)}catch(e){say(e.message)}}
+$('pw').addEventListener('keydown',e=>e.key==='Enter'&&login());start();
+</script></body></html>
