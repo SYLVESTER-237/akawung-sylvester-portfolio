@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+CLOUDINARY_CLOUD_NAME=d1vzato3
+CLOUDINARY_API_KEY=269585766444211
+CLOUDINARY_API_SECRET=hFxt8_wYknM1IyvaNyxFiiVBZ08
+ADMIN_PASSWORD=sparko

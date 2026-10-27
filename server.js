@@ -1,62 +1,628 @@
-// Spark Portfolio server. Start with: npm start   (then open http://localhost:3000)
-const express = require('express'), multer = require('multer'), fs = require('fs'), path = require('path'), crypto = require('crypto');
 
-const PASSWORD = process.env.ADMIN_PASSWORD || 'sparko';   // <-- CHANGE THIS
-const PORT = process.env.PORT || 3000;
-const UP = path.join(__dirname, 'uploads'), DATA = path.join(__dirname, 'data.json');
-fs.mkdirSync(UP, { recursive: true });
+// Spark Portfolio server
+// Start with: npm start
 
-const defaults = { name: 'AKAWUNG SYLVESTER', tagline: 'Graphic Designer · Yaoundé, Cameroon', cover: '', profile: '', designs: [] };
-const load = () => { try { return { ...defaults, ...JSON.parse(fs.readFileSync(DATA, 'utf8')) }; } catch { return { ...defaults }; } };
-const save = d => fs.writeFileSync(DATA, JSON.stringify(d, null, 2));
-const rm = f => { if (f && path.basename(f) === f) fs.unlink(path.join(UP, f), () => {}); };
+const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 
-const EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif' };
-const upload = multer({
-  storage: multer.diskStorage({ destination: UP, filename: (r, f, cb) => cb(null, crypto.randomBytes(8).toString('hex') + EXT[f.mimetype]) }),
-  fileFilter: (r, f, cb) => EXT[f.mimetype] ? cb(null, true) : cb(new Error('Only JPG, PNG, WEBP or GIF images are allowed.')),
-  limits: { fileSize: 8 * 1024 * 1024 }
-}).single('p');
-const up = (req, res, next) => upload(req, res, e => e ? res.status(400).json({ error: e.code === 'LIMIT_FILE_SIZE' ? 'Image is larger than 8 MB.' : e.message }) : next());
-
-const sessions = new Set();
-const cookie = req => (req.headers.cookie || '').split(';').map(s => s.trim()).find(s => s.startsWith('sid='))?.slice(4);
-const authed = req => sessions.has(cookie(req));
-const auth = (req, res, next) => authed(req) ? next() : res.status(401).json({ error: 'Please log in again.' });
-const same = (a, b) => { const h = x => crypto.createHash('sha256').update(String(x)).digest(); return crypto.timingSafeEqual(h(a), h(b)); };
+const { v2: cloudinary } = require('cloudinary');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 const app = express();
-app.use(express.json());
-app.use('/uploads', express.static(UP));
-app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/api/data', (req, res) => res.json(load()));
-app.get('/api/me', (req, res) => res.json({ in: authed(req) }));
-app.post('/api/login', (req, res) => {
-  if (!same(req.body.password || '', PASSWORD)) return res.status(401).json({ error: 'Wrong password.' });
-  const sid = crypto.randomBytes(24).toString('hex'); sessions.add(sid);
-  res.setHeader('Set-Cookie', `sid=${sid}; HttpOnly; SameSite=Strict; Path=/`); res.json({ ok: true });
+const PORT = process.env.PORT || 3000;
+const PASSWORD = process.env.ADMIN_PASSWORD || 'sparko';
+
+
+// =====================================================
+// CLOUDINARY CONFIGURATION
+// =====================================================
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
-app.post('/api/logout', (req, res) => { sessions.delete(cookie(req)); res.json({ ok: true }); });
+
+
+// =====================================================
+// PORTFOLIO DATA
+// =====================================================
+
+const defaults = {
+  name: 'AKAWUNG SYLVESTER',
+  tagline: 'Graphic Designer · Yaoundé, Cameroon',
+  cover: '',
+  coverPublicId: '',
+  profile: '',
+  profilePublicId: '',
+  designs: []
+};
+
+const DATA = path.join(__dirname, 'data.json');
+
+function load() {
+  try {
+    const saved = JSON.parse(
+      fs.readFileSync(DATA, 'utf8')
+    );
+
+    return {
+      ...defaults,
+      ...saved
+    };
+  } catch {
+    return {
+      ...defaults
+    };
+  }
+}
+
+function save(data) {
+  try {
+    fs.writeFileSync(
+      DATA,
+      JSON.stringify(data, null, 2)
+    );
+
+    return true;
+  } catch (error) {
+    console.error(
+      'Could not save data:',
+      error.message
+    );
+
+    return false;
+  }
+}
+
+
+// =====================================================
+// CLOUDINARY IMAGE STORAGE
+// =====================================================
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+
+  params: {
+    folder: 'spark-portfolio',
+
+    allowed_formats: [
+      'jpg',
+      'jpeg',
+      'png',
+      'webp',
+      'gif'
+    ],
+
+    resource_type: 'image'
+  }
+});
+
+const upload = multer({
+  storage: storage,
+
+  limits: {
+    fileSize: 8 * 1024 * 1024
+  },
+
+  fileFilter: (req, file, callback) => {
+
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/gif'
+    ];
+
+    if (allowedTypes.includes(file.mimetype)) {
+      callback(null, true);
+    } else {
+      callback(
+        new Error(
+          'Only JPG, PNG, WEBP or GIF images are allowed.'
+        )
+      );
+    }
+  }
+}).single('p');
+
+
+// =====================================================
+// UPLOAD MIDDLEWARE
+// =====================================================
+
+function up(req, res, next) {
+
+  upload(req, res, error => {
+
+    if (error) {
+
+      console.error(
+        'Upload error:',
+        error.message
+      );
+
+      if (error.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          error: 'Image is larger than 8 MB.'
+        });
+      }
+
+      return res.status(400).json({
+        error: error.message
+      });
+    }
+
+    next();
+  });
+}
+
+
+// =====================================================
+// CLOUDINARY DELETE
+// =====================================================
+
+async function deleteCloudinaryImage(publicId) {
+
+  if (!publicId) {
+    return;
+  }
+
+  try {
+
+    await cloudinary.uploader.destroy(
+      publicId,
+      {
+        resource_type: 'image'
+      }
+    );
+
+    console.log(
+      'Cloudinary image deleted:',
+      publicId
+    );
+
+  } catch (error) {
+
+    console.error(
+      'Cloudinary delete error:',
+      error.message
+    );
+  }
+}
+
+
+// =====================================================
+// AUTHENTICATION
+// =====================================================
+
+const sessions = new Set();
+
+function getCookie(req) {
+
+  const cookies =
+    req.headers.cookie || '';
+
+  return cookies
+    .split(';')
+    .map(item => item.trim())
+    .find(
+      item => item.startsWith('sid=')
+    )
+    ?.slice(4);
+}
+
+function isAuthenticated(req) {
+
+  const sid = getCookie(req);
+
+  return sid
+    ? sessions.has(sid)
+    : false;
+}
+
+function auth(req, res, next) {
+
+  if (isAuthenticated(req)) {
+    return next();
+  }
+
+  return res.status(401).json({
+    error: 'Please log in again.'
+  });
+}
+
+
+function passwordMatches(a, b) {
+
+  const hash = value =>
+    crypto
+      .createHash('sha256')
+      .update(String(value))
+      .digest();
+
+  return crypto.timingSafeEqual(
+    hash(a),
+    hash(b)
+  );
+}
+
+
+// =====================================================
+// EXPRESS SETUP
+// =====================================================
+
+app.use(express.json());
+
+app.use(
+  express.static(
+    path.join(__dirname, 'public')
+  )
+);
+
+
+// =====================================================
+// PUBLIC PORTFOLIO DATA
+// =====================================================
+
+app.get('/api/data', (req, res) => {
+
+  res.json(load());
+
+});
+
+
+// =====================================================
+// CHECK LOGIN
+// =====================================================
+
+app.get('/api/me', (req, res) => {
+
+  res.json({
+    in: isAuthenticated(req)
+  });
+
+});
+
+
+// =====================================================
+// LOGIN
+// =====================================================
+
+app.post('/api/login', (req, res) => {
+
+  const password =
+    req.body.password || '';
+
+  if (!passwordMatches(
+    password,
+    PASSWORD
+  )) {
+
+    return res.status(401).json({
+      error: 'Wrong password.'
+    });
+  }
+
+  const sid =
+    crypto.randomBytes(24).toString('hex');
+
+  sessions.add(sid);
+
+  res.setHeader(
+    'Set-Cookie',
+    'sid=' +
+      sid +
+      '; HttpOnly; SameSite=Strict; Path=/'
+  );
+
+  res.json({
+    ok: true
+  });
+
+});
+
+
+// =====================================================
+// LOGOUT
+// =====================================================
+
+app.post('/api/logout', (req, res) => {
+
+  const sid = getCookie(req);
+
+  if (sid) {
+    sessions.delete(sid);
+  }
+
+  res.json({
+    ok: true
+  });
+
+});
+
+
+// =====================================================
+// SAVE NAME + TAGLINE
+// =====================================================
 
 app.post('/api/text', auth, (req, res) => {
-  const d = load(); d.name = String(req.body.name || d.name).trim(); d.tagline = String(req.body.tagline || '').trim(); save(d); res.json({ ok: true });
-});
-['cover', 'profile'].forEach(k => app.post('/api/' + k, auth, up, (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'Choose an image first.' });
-  const d = load(); rm(d[k]); d[k] = req.file.filename; save(d); res.json({ ok: true });
-}));
-app.post('/api/design', auth, up, (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'Choose an image first.' });
-  const d = load();
-  d.designs.push({ id: crypto.randomBytes(4).toString('hex'), file: req.file.filename, title: (req.body.title || '').trim() || 'Untitled', category: (req.body.category || '').trim() || 'Design' });
-  save(d); res.json({ ok: true });
-});
-app.delete('/api/design/:id', auth, (req, res) => {
-  const d = load(), x = d.designs.find(v => v.id === req.params.id);
-  if (x) { rm(x.file); d.designs = d.designs.filter(v => v !== x); save(d); }
-  res.json({ ok: true });
-});
-app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 
-app.listen(PORT, () => console.log(`\nWebsite: http://localhost:${PORT}\nAdmin:   http://localhost:${PORT}/admin\n(Close this window to stop the site)\n`));
+  const data = load();
+
+  const name =
+    String(
+      req.body.name || data.name
+    ).trim();
+
+  const tagline =
+    String(
+      req.body.tagline || ''
+    ).trim();
+
+  data.name = name;
+  data.tagline = tagline;
+
+  if (!save(data)) {
+
+    return res.status(500).json({
+      error: 'Could not save portfolio details.'
+    });
+  }
+
+  res.json({
+    ok: true
+  });
+
+});
+
+
+// =====================================================
+// COVER + PROFILE UPLOAD
+// =====================================================
+
+['cover', 'profile'].forEach(type => {
+
+  app.post(
+    '/api/' + type,
+    auth,
+    up,
+    async (req, res) => {
+
+      if (!req.file) {
+
+        return res.status(400).json({
+          error: 'Choose an image first.'
+        });
+      }
+
+      const data = load();
+
+      // Delete previous image from Cloudinary
+      const oldPublicId =
+        data[type + 'PublicId'];
+
+      if (oldPublicId) {
+
+        await deleteCloudinaryImage(
+          oldPublicId
+        );
+      }
+
+
+      // Cloudinary gives us the URL
+      const imageUrl =
+        req.file.path ||
+        req.file.secure_url ||
+        '';
+
+
+      // Cloudinary public ID
+      const publicId =
+        req.file.filename ||
+        req.file.public_id ||
+        '';
+
+
+      data[type] = imageUrl;
+
+      data[type + 'PublicId'] =
+        publicId;
+
+
+      if (!save(data)) {
+
+        return res.status(500).json({
+          error: 'Image uploaded but could not save portfolio data.'
+        });
+      }
+
+
+      res.json({
+        ok: true,
+        url: imageUrl
+      });
+
+    }
+  );
+
+});
+
+
+// =====================================================
+// ADD DESIGN
+// =====================================================
+
+app.post(
+  '/api/design',
+  auth,
+  up,
+  (req, res) => {
+
+    if (!req.file) {
+
+      return res.status(400).json({
+        error: 'Choose an image first.'
+      });
+    }
+
+
+    const data = load();
+
+
+    const design = {
+
+      id:
+        crypto
+          .randomBytes(4)
+          .toString('hex'),
+
+      file:
+        req.file.path ||
+        req.file.secure_url ||
+        '',
+
+      publicId:
+        req.file.filename ||
+        req.file.public_id ||
+        '',
+
+      title:
+        String(
+          req.body.title || ''
+        ).trim() ||
+        'Untitled',
+
+      category:
+        String(
+          req.body.category || ''
+        ).trim() ||
+        'Design'
+
+    };
+
+
+    data.designs.push(design);
+
+
+    if (!save(data)) {
+
+      return res.status(500).json({
+        error: 'Design uploaded but could not save portfolio data.'
+      });
+    }
+
+
+    res.json({
+      ok: true
+    });
+
+  }
+);
+
+
+// =====================================================
+// DELETE DESIGN
+// =====================================================
+
+app.delete(
+  '/api/design/:id',
+  auth,
+  async (req, res) => {
+
+    const data = load();
+
+
+    const design =
+      data.designs.find(
+        item =>
+          item.id === req.params.id
+      );
+
+
+    if (!design) {
+
+      return res.status(404).json({
+        error: 'Design not found.'
+      });
+    }
+
+
+    // Delete image from Cloudinary
+    if (design.publicId) {
+
+      await deleteCloudinaryImage(
+        design.publicId
+      );
+    }
+
+
+    data.designs =
+      data.designs.filter(
+        item =>
+          item.id !== req.params.id
+      );
+
+
+    if (!save(data)) {
+
+      return res.status(500).json({
+        error: 'Could not save the deletion.'
+      });
+    }
+
+
+    res.json({
+      ok: true
+    });
+
+  }
+);
+
+
+// =====================================================
+// ADMIN PAGE
+// =====================================================
+
+app.get('/admin', (req, res) => {
+
+  res.sendFile(
+    path.join(
+      __dirname,
+      'public',
+      'admin.html'
+    )
+  );
+
+});
+
+
+// =====================================================
+// START SERVER
+// =====================================================
+
+app.listen(PORT, () => {
+
+  console.log('');
+  console.log(
+    'Website: http://localhost:' +
+    PORT
+  );
+
+  console.log(
+    'Admin:   http://localhost:' +
+    PORT +
+    '/admin'
+  );
+
+  console.log(
+    '(Close this window to stop the site)'
+  );
+
+  console.log('');
+
+});
