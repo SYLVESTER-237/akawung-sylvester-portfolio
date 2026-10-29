@@ -42,7 +42,8 @@ const defaults = {
   coverPublicId: '',
   profile: '',
   profilePublicId: '',
-  designs: []
+  designs: [],
+  websites: []
 };
 
 let databaseReady;
@@ -567,6 +568,253 @@ app.delete('/api/design/:id', auth, async (req, res, next) => {
   }
 });
 
+/* =====================================================
+   WEBSITE PROJECTS
+===================================================== */
+
+function normalizeWebsites(data) {
+  if (!Array.isArray(data.websites)) {
+    data.websites = [];
+  }
+}
+
+function websiteFields(body, existing = {}) {
+  const title = String(body?.title ?? existing.title ?? '').trim();
+  const url = String(body?.url ?? existing.url ?? '').trim();
+  const category = String(
+    body?.category ?? existing.category ?? 'Website'
+  ).trim();
+  const description = String(
+    body?.description ?? existing.description ?? ''
+  ).trim();
+
+  if (!title || !url || !category || !description) {
+    const error = new Error(
+      'Please provide the website name, URL, category and description.'
+    );
+    error.status = 400;
+    throw error;
+  }
+
+  let parsed;
+
+  try {
+    parsed = new URL(url);
+  } catch (_) {
+    const error = new Error('Enter a valid website URL.');
+    error.status = 400;
+    throw error;
+  }
+
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    const error = new Error(
+      'The website URL must start with http:// or https://.'
+    );
+    error.status = 400;
+    throw error;
+  }
+
+  return {
+    title,
+    url: parsed.href,
+    category,
+    description
+  };
+}
+
+// ADD A WEBSITE
+app.post('/api/website', auth, up, async (req, res, next) => {
+  let uploadedPublicId = '';
+
+  try {
+    const data = await loadData();
+    normalizeWebsites(data);
+
+    if (!req.file) {
+      return res.status(400).json({
+        error: 'Upload a screenshot for this website.'
+      });
+    }
+
+    const image =
+      req.file.path ||
+      req.file.secure_url ||
+      req.file.url ||
+      '';
+
+    uploadedPublicId =
+      req.file.filename ||
+      req.file.public_id ||
+      '';
+
+    if (!image || !uploadedPublicId) {
+      throw Object.assign(
+        new Error('Cloudinary did not return the screenshot URL.'),
+        { status: 502 }
+      );
+    }
+
+    const website = {
+      id: crypto.randomBytes(8).toString('hex'),
+      ...websiteFields(req.body),
+      image,
+      publicId: uploadedPublicId
+    };
+
+    data.websites.push(website);
+
+    if (!(await saveData(data))) {
+      await deleteCloudinaryImage(uploadedPublicId);
+      return res.status(500).json({
+        error: 'Could not save the website project.'
+      });
+    }
+
+    return res.json({
+      ok: true,
+      message: 'Website saved successfully.',
+      website
+    });
+  } catch (error) {
+    if (uploadedPublicId) {
+      await deleteCloudinaryImage(uploadedPublicId);
+    }
+    next(error);
+  }
+});
+
+// EDIT A WEBSITE
+app.put('/api/website/:id', auth, up, async (req, res, next) => {
+  let uploadedPublicId = '';
+
+  try {
+    const data = await loadData();
+    normalizeWebsites(data);
+
+    const index = data.websites.findIndex(
+      item => item.id === req.params.id
+    );
+
+    if (index === -1) {
+      if (req.file) {
+        await deleteCloudinaryImage(
+          req.file.filename || req.file.public_id
+        );
+      }
+
+      return res.status(404).json({
+        error: 'Website project not found.'
+      });
+    }
+
+    const existing = data.websites[index];
+    const fields = websiteFields(req.body, existing);
+
+    let image = existing.image;
+    let publicId = existing.publicId;
+
+    if (req.file) {
+      image =
+        req.file.path ||
+        req.file.secure_url ||
+        req.file.url ||
+        '';
+
+      publicId =
+        req.file.filename ||
+        req.file.public_id ||
+        '';
+
+      uploadedPublicId = publicId;
+
+      if (!image || !publicId) {
+        throw Object.assign(
+          new Error('Cloudinary did not return the screenshot URL.'),
+          { status: 502 }
+        );
+      }
+    }
+
+    const updatedWebsite = {
+      ...existing,
+      ...fields,
+      image,
+      publicId
+    };
+
+    data.websites[index] = updatedWebsite;
+
+    if (!(await saveData(data))) {
+      if (uploadedPublicId) {
+        await deleteCloudinaryImage(uploadedPublicId);
+      }
+
+      return res.status(500).json({
+        error: 'Could not save the website changes.'
+      });
+    }
+
+    // Delete the old screenshot only after the update succeeds.
+    if (
+      uploadedPublicId &&
+      existing.publicId &&
+      existing.publicId !== uploadedPublicId
+    ) {
+      await deleteCloudinaryImage(existing.publicId);
+    }
+
+    return res.json({
+      ok: true,
+      message: 'Website updated successfully.',
+      website: updatedWebsite
+    });
+  } catch (error) {
+    if (uploadedPublicId) {
+      await deleteCloudinaryImage(uploadedPublicId);
+    }
+    next(error);
+  }
+});
+
+// DELETE A WEBSITE
+app.delete('/api/website/:id', auth, async (req, res, next) => {
+  try {
+    const data = await loadData();
+    normalizeWebsites(data);
+
+    const website = data.websites.find(
+      item => item.id === req.params.id
+    );
+
+    if (!website) {
+      return res.status(404).json({
+        error: 'Website project not found.'
+      });
+    }
+
+    data.websites = data.websites.filter(
+      item => item.id !== req.params.id
+    );
+
+    if (!(await saveData(data))) {
+      return res.status(500).json({
+        error: 'Could not save the deletion.'
+      });
+    }
+
+    if (website.publicId) {
+      await deleteCloudinaryImage(website.publicId);
+    }
+
+    return res.json({
+      ok: true,
+      message: 'Website deleted successfully.'
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // =====================================================
 // ADMIN PAGE
 // =====================================================
@@ -590,9 +838,9 @@ app.use((error, req, res, next) => {
     ? 'Something went wrong. Please check the server logs.'
     : (error.message || 'Something went wrong.');
 
-  return res.status(500).json({
-    error: message
-  });
+  return res.status(error.status || 500).json({
+  error: message
+});
 });
 
 // =====================================================

@@ -18,35 +18,308 @@ button{background:#2c9fe8;color:#03104e;font-weight:bold;cursor:pointer;border:0
 <input id="nm" placeholder="Your name"><input id="tg" placeholder="Short line under your name"><button onclick="saveText()">Save details</button></div>
 <div class="b"><h2>Add a design</h2><input type="file" id="fd" accept="image/*"><input id="dt" placeholder="Title"><input id="dc" placeholder="Category (Wedding, Logo, Flyer...)">
 <button onclick="addDesign()">Publish design</button></div>
-<div class="b"><h2>Published designs (<span id="n">0</span>)</h2><div id="list"></div></div></div></div>
+<div class="b"><h2>Published designs (<span id="n">0</span>)</h2><div id="list"></div></div></div>
+
+<div class="b">
+  <h2>Add or edit a website</h2>
+  <input type="hidden" id="wid">
+  <input id="wt" placeholder="Website name">
+  <input id="wu" type="url" placeholder="Website URL (https://example.com)">
+  <input id="wc" placeholder="Category (Portfolio, Business, Restaurant...)">
+  <input id="wdesc" placeholder="Short description">
+  <label for="wf">Website screenshot (JPG, PNG, WEBP or GIF)</label>
+  <input type="file" id="wf" accept="image/jpeg,image/png,image/webp,image/gif">
+  <button onclick="saveWebsite()">Save website</button>
+  <button onclick="clearWebsiteForm()" style="background:#07104e;color:#fff;border:1px solid #20338f">
+    Clear form
+  </button>
+</div>
+<div class="b">
+  <h2>Published websites (<span id="wn">0</span>)</h2>
+  <div id="wlist"></div>
+</div>
+
+</div>
+
 <script>
-const $=id=>document.getElementById(id);
+const $ = id => document.getElementById(id);
+
 function imageUrl(value) {
   if (!value) return '';
   if (/^https?:\/\//i.test(value)) return value;
   return '/uploads/' + value.replace(/^\/?uploads\//, '');
 }
-function say(t,ok){$('msg').innerHTML='<p class="'+(ok?'ok':'er')+'"></p>';$('msg').firstChild.textContent=t;scrollTo(0,0)}
-async function call(url,opt){const r=await fetch(url,opt);const j=await r.json().catch(()=>({}));if(r.status===401&&url!=='/api/login'){start();throw new Error(j.error)}if(!r.ok)throw new Error(j.error||'Something went wrong.');return j}
-async function start(){const m=await call('/api/me').catch(()=>({}));$('login').style.display=m.in?'none':'block';$('panel').style.display=m.in?'block':'none';if(m.in)refresh()}
-async function login(){try{await call('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('pw').value})});start()}catch(e){$('lmsg').innerHTML='<p class="er"></p>';$('lmsg').firstChild.textContent=e.message}}
-async function logout(){await call('/api/logout',{method:'POST'});start()}
-async function refresh(){const d=await (await fetch('/api/data')).json();
- for (const [k, i] of [['cover', 'tc'], ['profile', 'tp']]) {
-  $(i).hidden = !d[k];
 
-  if (d[k]) {
-    $(i).src = imageUrl(d[k]);
+function say(t, ok) {
+  $('msg').innerHTML = '<p class="' + (ok ? 'ok' : 'er') + '"></p>';
+  $('msg').firstChild.textContent = t;
+  scrollTo(0, 0);
+}
+
+async function call(url, opt) {
+  const r = await fetch(url, opt);
+  const j = await r.json().catch(() => ({}));
+
+  if (r.status === 401 && url !== '/api/login') {
+    start();
+    throw new Error(j.error || 'Please log in again.');
+  }
+
+  if (!r.ok) throw new Error(j.error || 'Something went wrong.');
+  return j;
+}
+
+async function start() {
+  const m = await call('/api/me').catch(() => ({}));
+  $('login').style.display = m.in ? 'none' : 'block';
+  $('panel').style.display = m.in ? 'block' : 'none';
+  if (m.in) refresh();
+}
+
+async function login() {
+  try {
+    await call('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: $('pw').value })
+    });
+    start();
+  } catch (e) {
+    $('lmsg').innerHTML = '<p class="er"></p>';
+    $('lmsg').firstChild.textContent = e.message;
   }
 }
-  $('nm').value=d.name;$('tg').value=d.tagline;$('n').textContent=d.designs.length;$('list').innerHTML='';
-  d.designs.forEach(x=>{const r=document.createElement('div');r.className='it';const i=document.createElement('img');i.src = imageUrl(x.file);
-    const s=document.createElement('span');s.textContent=x.title+' — '+x.category;const b=document.createElement('button');b.textContent='Delete';
-    b.onclick=async()=>{if(confirm('Delete this design?')){await call('/api/design/'+x.id,{method:'DELETE'});say('Design deleted.',1);refresh()}};r.append(i,s,b);$('list').append(r)})}
-async function send(path,fid,extra){const f=$(fid).files[0];if(!f)return say('Choose an image first.');const fd=new FormData();fd.append('p',f);
-  for(const k in (extra||{}))fd.append(k,extra[k]);
-  try{await call('/api/'+path,{method:'POST',body:fd});$(fid).value='';say('Saved.',1);refresh();return 1}catch(e){say(e.message)}}
-async function addDesign(){if(await send('design','fd',{title:$('dt').value,category:$('dc').value})){$('dt').value='';$('dc').value=''}}
-async function saveText(){try{await call('/api/text',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('nm').value,tagline:$('tg').value})});say('Details saved.',1)}catch(e){say(e.message)}}
-$('pw').addEventListener('keydown',e=>e.key==='Enter'&&login());start();
-</script></body></html>
+
+async function logout() {
+  await call('/api/logout', { method: 'POST' });
+  start();
+}
+
+async function refresh() {
+  try {
+    const d = await call('/api/data');
+
+    for (const [k, i] of [['cover', 'tc'], ['profile', 'tp']]) {
+      $(i).hidden = !d[k];
+      if (d[k]) $(i).src = imageUrl(d[k]);
+    }
+
+    $('nm').value = d.name || '';
+    $('tg').value = d.tagline || '';
+
+    const designs = d.designs || [];
+    $('n').textContent = designs.length;
+    $('list').innerHTML = '';
+
+    designs.forEach(x => {
+      const r = document.createElement('div');
+      r.className = 'it';
+
+      const i = document.createElement('img');
+      i.src = imageUrl(x.file);
+      i.alt = x.title || 'Design';
+
+      const s = document.createElement('span');
+      s.textContent = (x.title || 'Untitled') + ' — ' + (x.category || '');
+
+      const b = document.createElement('button');
+      b.textContent = 'Delete';
+      b.onclick = async () => {
+        if (!confirm('Delete this design?')) return;
+        try {
+          await call('/api/design/' + encodeURIComponent(x.id), {
+            method: 'DELETE'
+          });
+          say('Design deleted.', true);
+          await refresh();
+        } catch (e) {
+          say(e.message);
+        }
+      };
+
+      r.append(i, s, b);
+      $('list').append(r);
+    });
+
+    renderWebsites(d.websites || []);
+  } catch (e) {
+    say(e.message);
+  }
+}
+
+async function send(path, fid, extra) {
+  const f = $(fid).files[0];
+  if (!f) return say('Choose an image first.');
+
+  const fd = new FormData();
+  fd.append('p', f);
+
+  for (const k in (extra || {})) fd.append(k, extra[k]);
+
+  try {
+    await call('/api/' + path, { method: 'POST', body: fd });
+    $(fid).value = '';
+    say('Saved.', true);
+    await refresh();
+    return 1;
+  } catch (e) {
+    say(e.message);
+  }
+}
+
+async function addDesign() {
+  if (await send('design', 'fd', {
+    title: $('dt').value,
+    category: $('dc').value
+  })) {
+    $('dt').value = '';
+    $('dc').value = '';
+  }
+}
+
+async function saveText() {
+  try {
+    await call('/api/text', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: $('nm').value,
+        tagline: $('tg').value
+      })
+    });
+    say('Details saved.', true);
+  } catch (e) {
+    say(e.message);
+  }
+}
+
+/* WEBSITE MANAGEMENT */
+
+function clearWebsiteForm() {
+  $('wid').value = '';
+  $('wt').value = '';
+  $('wu').value = '';
+  $('wc').value = '';
+  $('wdesc').value = '';
+  $('wf').value = '';
+}
+
+async function saveWebsite() {
+  const id = $('wid').value;
+  const title = $('wt').value.trim();
+  const url = $('wu').value.trim();
+  const category = $('wc').value.trim();
+  const description = $('wdesc').value.trim();
+  const file = $('wf').files[0];
+
+  if (!title || !url || !category || !description) {
+    return say('Please fill in all website details.');
+  }
+
+  try {
+    const parsed = new URL(url);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return say('Use a valid HTTP or HTTPS website URL.');
+    }
+  } catch {
+    return say('Enter a valid website URL, including https://');
+  }
+
+  if (!id && !file) {
+    return say('Upload a screenshot for the new website.');
+  }
+
+  const fd = new FormData();
+  fd.append('title', title);
+  fd.append('url', url);
+  fd.append('category', category);
+  fd.append('description', description);
+  if (file) fd.append('p', file);
+
+  try {
+    const result = await call(
+      id
+        ? '/api/website/' + encodeURIComponent(id)
+        : '/api/website',
+      {
+        method: id ? 'PUT' : 'POST',
+        body: fd
+      }
+    );
+
+    clearWebsiteForm();
+    say(result.message || 'Website saved successfully.', true);
+    await refresh();
+  } catch (e) {
+    say(e.message);
+  }
+}
+
+function renderWebsites(websites) {
+  $('wn').textContent = websites.length;
+  $('wlist').innerHTML = '';
+
+  if (!websites.length) {
+    $('wlist').textContent = 'No websites published yet.';
+    return;
+  }
+
+  websites.forEach(site => {
+    const r = document.createElement('div');
+    r.className = 'it';
+
+    const img = document.createElement('img');
+    img.src = imageUrl(site.image);
+    img.alt = site.title || 'Website screenshot';
+
+    const info = document.createElement('span');
+    info.textContent =
+      (site.title || 'Untitled') + ' — ' +
+      (site.category || '') + ' — ' +
+      (site.url || '');
+
+    const edit = document.createElement('button');
+    edit.textContent = 'Edit';
+    edit.onclick = () => {
+      $('wid').value = site.id;
+      $('wt').value = site.title || '';
+      $('wu').value = site.url || '';
+      $('wc').value = site.category || '';
+      $('wdesc').value = site.description || '';
+      $('wf').value = '';
+
+      $('wt').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      $('wt').focus();
+    };
+
+    const del = document.createElement('button');
+    del.textContent = 'Delete';
+    del.onclick = async () => {
+      if (!confirm('Delete this website from your portfolio?')) return;
+
+      try {
+        await call('/api/website/' + encodeURIComponent(site.id), {
+          method: 'DELETE'
+        });
+        clearWebsiteForm();
+        say('Website deleted.', true);
+        await refresh();
+      } catch (e) {
+        say(e.message);
+      }
+    };
+
+    r.append(img, info, edit, del);
+    $('wlist').append(r);
+  });
+}
+
+$('pw').addEventListener('keydown', e => {
+  if (e.key === 'Enter') login();
+});
+
+start();
+</script>
+</body>
+</html>
+

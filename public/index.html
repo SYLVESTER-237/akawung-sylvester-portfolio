@@ -90,13 +90,68 @@ form{display:grid;gap:12px}input,textarea{padding:13px;background:#07104e;border
 #box span{position:absolute;top:14px;right:24px;font-size:44px;cursor:pointer}
 footer{padding:22px 0;background:#020630;text-align:center;color:#8998bd;font-size:12px}footer a{color:inherit}
 @media(max-width:800px){.links{display:none;position:absolute;top:60px;right:4%;background:#07104e;padding:14px;flex-direction:column;width:200px;border:1px solid #1b2c80}.links.open{display:flex}.menu{display:block}.two,.contact{grid-template-columns:1fr;gap:26px}.profile{flex-direction:column;align-items:center;text-align:center}}
+
+.website-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.website-card {
+  min-width: 0;
+  overflow: hidden;
+  background: #071253;
+  border: 1px solid #18287c;
+  border-radius: 6px;
+  transition: transform .2s, border-color .2s;
+}
+
+.website-card:hover {
+  transform: translateY(-4px);
+  border-color: #2c9fe8;
+}
+
+.website-card img {
+  display: block;
+  width: 100%;
+  height: 165px;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.website-card-content {
+  padding: 14px;
+}
+
+.website-card h3 {
+  font-size: 17px;
+  margin-bottom: 5px;
+  overflow-wrap: anywhere;
+}
+
+.website-card p {
+  color: #aebbd7;
+  font-size: 13px;
+  margin-bottom: 12px;
+  overflow-wrap: anywhere;
+}
+
+.website-card .btn {
+  padding: 9px 13px;
+  font-size: 12px;
+}
+
+.more-btn {
+  margin-top: 22px;
+}
+
 </style>
 </head>
 <body>
 <nav><div class="wrap"><a class="logo" href="#home"><span id="logoName">AKAWUNG SYLVESTER</span><span>.</span></a>
 <button class="menu" aria-label="Open menu" onclick="document.getElementById('links').classList.toggle('open')">☰</button>
 <div class="links" id="links" onclick="this.classList.remove('open')">
-<a href="#home">HOME</a><a href="#about">ABOUT ME</a><a href="#why">WHY ME</a><a href="#projects">PROJECTS</a><a href="#reviews">REVIEWS</a><a href="#contact">CONTACT</a></div></div></nav>
+<a href="#home">HOME</a><a href="#about">ABOUT ME</a><a href="#why">WHY ME</a><a href="#projects">PROJECTS</a><a href="#websites">WEBSITES</a><a href="#reviews">REVIEWS</a><a href="#contact">CONTACT</a></div></div></nav>
 
 <div id="home" class="hero">
   <div id="cover"></div>
@@ -152,6 +207,21 @@ footer{padding:22px 0;background:#020630;text-align:center;color:#8998bd;font-si
 <p class="t" style="max-width:650px;margin-bottom:26px">A collection of designs, creative projects and digital experiences I have created using my skills and creativity.</p>
 <div class="filters" id="filters"></div><div class="gallery" id="gallery"></div></div></section>
 
+<section id="websites" class="dark">
+  <div class="wrap">
+    <div class="label">04 / WEB DEVELOPMENT</div>
+    <h2>Websites I've <span>Built.</span></h2>
+    <p class="t" style="max-width:650px;margin-bottom:26px">
+      Explore websites and digital experiences I've developed.
+      Select a project to visit its live website.
+    </p>
+    <div class="website-gallery" id="websiteGallery"></div>
+    <button class="btn more-btn" id="websiteMore" type="button"
+      style="display:none;margin-top:24px">VIEW MORE WEBSITES ↓</button>
+  </div>
+</section>
+
+
 <section id="reviews" class="dark"><div class="wrap"><div class="label">04 / REVIEWS</div><h2>What people <span>say.</span></h2>
 <div class="review"><div class="q">“</div><p>Great creativity, strong attention to detail and a real desire to make the final product better.</p><strong style="font-size:11px;letter-spacing:2px">CLIENT / COLLEAGUE</strong></div></div></section>
 
@@ -168,45 +238,250 @@ footer{padding:22px 0;background:#020630;text-align:center;color:#8998bd;font-si
 <footer>© <span id="fname">AKAWUNG SYLVESTER</span> · 
 <div id="box" onclick="if(event.target.tagName!=='IMG')cl()"><span onclick="cl()">&times;</span><img id="big" alt=""></div>
 
+
 <script>
-const $=id=>document.getElementById(id);
+const $ = id => document.getElementById(id);
+
 function imageUrl(value) {
   if (!value) return '';
   if (/^https?:\/\//i.test(value)) return value;
   return '/uploads/' + value.replace(/^\/?uploads\//, '');
 }
-function op(s){if(s){$('big').src=s;$('box').style.display='flex'}}
-function cl(){$('box').style.display='none'}
-document.addEventListener('keydown',e=>e.key==='Escape'&&cl());
-fetch('/api/data').then(r=>r.json()).catch(()=>({})).then(d=>{
-  if(d.name){const w=d.name.split(' ');$('name').textContent=w[0];if(w.length>1){const s=document.createElement('span');s.textContent=w.slice(1).join(' ');$('name').append(s)}$('logoName').textContent=d.name;$('fname').textContent=d.name}
-if(d.tagline)$('tagline').textContent=d.tagline;
-if (d.cover) {
-  const u = imageUrl(d.cover);
-  $('cover').style.backgroundImage = `url("${u}")`;
-  $('cover').classList.add('zoom');
-  $('cover').onclick = () => op(u);
+
+function op(src) {
+  if (!src) return;
+  $('big').src = src;
+  $('box').style.display = 'flex';
 }
 
-  if (d.profile) {
-  const u = imageUrl(d.profile);
-  $('avatar').src = u;
-  $('avatar').classList.add('zoom');
-  $('avatar').onclick = () => op(u);
-} else {
-  $('avatar').removeAttribute('src');
+function cl() {
+  $('box').style.display = 'none';
+  $('big').src = '';
 }
-  const items=(d.designs||[]).slice().reverse(),cats=[...new Set(items.map(x=>x.category))];
-  function show(c){$('gallery').innerHTML='';
-    items.filter(x=>c==='All'||x.category===c).slice(0,c==='All'?12:undefined).forEach(x=>{
-      const k=document.createElement('div');k.className='card';
-      const i=document.createElement('img');i.className='zoom';i.src = imageUrl(x.file);i.alt=x.title;i.loading='lazy';i.onclick=()=>op(i.src);
-      const t=document.createElement('div'),s=document.createElement('small'),h=document.createElement('h3');
-      s.textContent=x.category.toUpperCase();h.textContent=x.title;t.append(s,h);k.append(i,t);$('gallery').append(k)});
-    if(c==='All'&&items.length>12){const n=document.createElement('p');n.className='t';n.style.gridColumn='1/-1';n.textContent='Showing the latest 12 designs. Choose a category above to see more.';$('gallery').append(n)}
-    [...$('filters').children].forEach(b=>b.classList.toggle('on',b.textContent===c))}
-  if(cats.length)['All',...cats].forEach(c=>{const b=document.createElement('button');b.textContent=c;b.onclick=()=>show(c);$('filters').append(b)});
-  show('All')});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') cl();
+});
+
+fetch('/api/data')
+  .then(r => {
+    if (!r.ok) throw new Error('Could not load portfolio data');
+    return r.json();
+  })
+  .catch(error => {
+    console.error(error);
+    return {};
+  })
+  .then(d => {
+    // NAME AND TAGLINE
+    if (d.name) {
+      const words = d.name.split(' ');
+      $('name').textContent = words[0];
+
+      if (words.length > 1) {
+        const span = document.createElement('span');
+        span.textContent = words.slice(1).join(' ');
+        $('name').append(span);
+      }
+
+      $('logoName').textContent = d.name;
+      $('fname').textContent = d.name;
+    }
+
+    if (d.tagline) {
+      $('tagline').textContent = d.tagline;
+    }
+
+    // COVER IMAGE
+    if (d.cover) {
+      const url = imageUrl(d.cover);
+      $('cover').style.backgroundImage = `url("${url}")`;
+      $('cover').classList.add('zoom');
+      $('cover').onclick = () => op(url);
+    }
+
+    // PROFILE IMAGE
+    if (d.profile) {
+      const url = imageUrl(d.profile);
+      $('avatar').src = url;
+      $('avatar').classList.add('zoom');
+      $('avatar').onclick = () => op(url);
+    } else {
+      $('avatar').removeAttribute('src');
+    }
+
+    // =========================================
+    // WEBSITES I'VE BUILT
+    // =========================================
+
+    const websites = (
+      Array.isArray(d.websites) ? d.websites : []
+    ).slice().reverse();
+
+    let websiteLimit = 5;
+
+    function renderWebsites() {
+      const gallery = $('websiteGallery');
+      const more = $('websiteMore');
+
+      gallery.innerHTML = '';
+
+      if (!websites.length) {
+        const message = document.createElement('p');
+        message.className = 't';
+        message.textContent =
+          'My website projects will appear here soon.';
+        gallery.append(message);
+      }
+
+      websites.slice(0, websiteLimit).forEach(site => {
+        const card = document.createElement('article');
+        card.className = 'website-card';
+
+        const image = document.createElement('img');
+        image.src = imageUrl(site.image);
+        image.alt = (site.title || 'Website') + ' screenshot';
+        image.loading = 'lazy';
+        image.onclick = () => op(image.src);
+
+        const content = document.createElement('div');
+        content.className = 'website-card-content';
+
+        const category = document.createElement('small');
+        category.textContent =
+          (site.category || 'WEBSITE').toUpperCase();
+
+        const title = document.createElement('h3');
+        title.textContent = site.title || 'Website project';
+
+        const description = document.createElement('p');
+        description.textContent = site.description || '';
+
+        const link = document.createElement('a');
+        link.className = 'btn';
+        link.href = site.url || '#';
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = 'VIEW WEBSITE ↗';
+
+        if (!site.url) {
+          link.removeAttribute('target');
+          link.removeAttribute('href');
+          link.style.opacity = '.5';
+        }
+
+        content.append(category, title, description, link);
+        card.append(image, content);
+        gallery.append(card);
+      });
+
+      more.style.display =
+        websiteLimit < websites.length ? 'inline-block' : 'none';
+    }
+
+    $('websiteMore').onclick = () => {
+      websiteLimit += 5;
+      renderWebsites();
+    };
+
+    renderWebsites();
+
+    // =========================================
+    // MY DESIGNS
+    // =========================================
+
+    const items = (
+      Array.isArray(d.designs) ? d.designs : []
+    ).slice().reverse();
+
+    const categories = [
+      ...new Set(items.map(x => x.category || 'Design'))
+    ];
+
+    let designLimit = 20;
+    let activeCategory = 'All';
+
+    // Create the View More button automatically.
+    const designMore = document.createElement('button');
+    designMore.className = 'btn more-btn';
+    designMore.type = 'button';
+    designMore.textContent = 'VIEW MORE DESIGNS ↓';
+    designMore.style.display = 'none';
+    $('gallery').insertAdjacentElement('afterend', designMore);
+
+    function show(category) {
+      activeCategory = category;
+
+      const gallery = $('gallery');
+      gallery.innerHTML = '';
+
+      const filtered = items.filter(item =>
+        category === 'All' ||
+        (item.category || 'Design') === category
+      );
+
+      const visible = category === 'All'
+        ? filtered.slice(0, designLimit)
+        : filtered;
+
+      visible.forEach(item => {
+        const card = document.createElement('article');
+        card.className = 'card';
+
+        const image = document.createElement('img');
+        image.className = 'zoom';
+        image.src = imageUrl(item.file);
+        image.alt = item.title || 'Design';
+        image.loading = 'lazy';
+        image.onclick = () => op(image.src);
+
+        const content = document.createElement('div');
+
+        const label = document.createElement('small');
+        label.textContent =
+          (item.category || 'DESIGN').toUpperCase();
+
+        const title = document.createElement('h3');
+        title.textContent = item.title || 'Untitled design';
+
+        content.append(label, title);
+        card.append(image, content);
+        gallery.append(card);
+      });
+
+      designMore.style.display =
+        category === 'All' && filtered.length > designLimit
+          ? 'inline-block'
+          : 'none';
+
+      [...$('filters').children].forEach(button => {
+        button.classList.toggle(
+          'on',
+          button.dataset.category === category
+        );
+      });
+    }
+
+    $('filters').innerHTML = '';
+
+    if (items.length) {
+      ['All', ...categories].forEach(category => {
+        const button = document.createElement('button');
+        button.textContent = category;
+        button.dataset.category = category;
+        button.onclick = () => show(category);
+        $('filters').append(button);
+      });
+    }
+
+    designMore.onclick = () => {
+      designLimit += 20;
+      show(activeCategory);
+    };
+
+    show('All');
+  });
 </script>
+
 <a href="https://wa.me/237651018413" target="_blank" rel="noopener" aria-label="Chat on WhatsApp" style="position:fixed;right:18px;bottom:18px;z-index:8;background:#25d366;color:#fff;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font-size:30px;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.4)">💬</a>
 </body></html>
