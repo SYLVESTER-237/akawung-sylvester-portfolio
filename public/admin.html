@@ -21,15 +21,26 @@ button{background:#2c9fe8;color:#03104e;font-weight:bold;cursor:pointer;border:0
 <div class="b"><h2>Published designs (<span id="n">0</span>)</h2><div id="list"></div></div></div></div>
 <script>
 const $=id=>document.getElementById(id);
+function imageUrl(value) {
+  if (!value) return '';
+  if (/^https?:\/\//i.test(value)) return value;
+  return '/uploads/' + value.replace(/^\/?uploads\//, '');
+}
 function say(t,ok){$('msg').innerHTML='<p class="'+(ok?'ok':'er')+'"></p>';$('msg').firstChild.textContent=t;scrollTo(0,0)}
 async function call(url,opt){const r=await fetch(url,opt);const j=await r.json().catch(()=>({}));if(r.status===401&&url!=='/api/login'){start();throw new Error(j.error)}if(!r.ok)throw new Error(j.error||'Something went wrong.');return j}
 async function start(){const m=await call('/api/me').catch(()=>({}));$('login').style.display=m.in?'none':'block';$('panel').style.display=m.in?'block':'none';if(m.in)refresh()}
 async function login(){try{await call('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('pw').value})});start()}catch(e){$('lmsg').innerHTML='<p class="er"></p>';$('lmsg').firstChild.textContent=e.message}}
 async function logout(){await call('/api/logout',{method:'POST'});start()}
 async function refresh(){const d=await (await fetch('/api/data')).json();
-  for(const [k,i] of [['cover','tc'],['profile','tp']]){$(i).hidden=!d[k];if(d[k])$(i).src='/uploads/'+d[k]}
+ for (const [k, i] of [['cover', 'tc'], ['profile', 'tp']]) {
+  $(i).hidden = !d[k];
+
+  if (d[k]) {
+    $(i).src = imageUrl(d[k]);
+  }
+}
   $('nm').value=d.name;$('tg').value=d.tagline;$('n').textContent=d.designs.length;$('list').innerHTML='';
-  d.designs.forEach(x=>{const r=document.createElement('div');r.className='it';const i=document.createElement('img');i.src='/uploads/'+x.file;
+  d.designs.forEach(x=>{const r=document.createElement('div');r.className='it';const i=document.createElement('img');i.src = imageUrl(x.file);
     const s=document.createElement('span');s.textContent=x.title+' — '+x.category;const b=document.createElement('button');b.textContent='Delete';
     b.onclick=async()=>{if(confirm('Delete this design?')){await call('/api/design/'+x.id,{method:'DELETE'});say('Design deleted.',1);refresh()}};r.append(i,s,b);$('list').append(r)})}
 async function send(path,fid,extra){const f=$(fid).files[0];if(!f)return say('Choose an image first.');const fd=new FormData();fd.append('p',f);

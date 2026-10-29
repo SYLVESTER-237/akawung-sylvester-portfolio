@@ -170,20 +170,37 @@ footer{padding:22px 0;background:#020630;text-align:center;color:#8998bd;font-si
 
 <script>
 const $=id=>document.getElementById(id);
+function imageUrl(value) {
+  if (!value) return '';
+  if (/^https?:\/\//i.test(value)) return value;
+  return '/uploads/' + value.replace(/^\/?uploads\//, '');
+}
 function op(s){if(s){$('big').src=s;$('box').style.display='flex'}}
 function cl(){$('box').style.display='none'}
 document.addEventListener('keydown',e=>e.key==='Escape'&&cl());
 fetch('/api/data').then(r=>r.json()).catch(()=>({})).then(d=>{
   if(d.name){const w=d.name.split(' ');$('name').textContent=w[0];if(w.length>1){const s=document.createElement('span');s.textContent=w.slice(1).join(' ');$('name').append(s)}$('logoName').textContent=d.name;$('fname').textContent=d.name}
 if(d.tagline)$('tagline').textContent=d.tagline;
-if(d.cover){const u='/uploads/'+d.cover;$('cover').style.backgroundImage="url('"+u+"')";$('cover').classList.add('zoom');$('cover').onclick=()=>op(u)}
-if(d.profile){const u='/uploads/'+d.profile;$('avatar').src=u;$('avatar').classList.add('zoom');$('avatar').onclick=()=>op(u)}else $('avatar').removeAttribute('src');
-  if(d.profile){const u='/uploads/'+d.profile;$('avatar').src=u;$('avatar').classList.add('zoom');$('avatar').onclick=()=>op(u)}else $('avatar').removeAttribute('src');
+if (d.cover) {
+  const u = imageUrl(d.cover);
+  $('cover').style.backgroundImage = `url("${u}")`;
+  $('cover').classList.add('zoom');
+  $('cover').onclick = () => op(u);
+}
+
+  if (d.profile) {
+  const u = imageUrl(d.profile);
+  $('avatar').src = u;
+  $('avatar').classList.add('zoom');
+  $('avatar').onclick = () => op(u);
+} else {
+  $('avatar').removeAttribute('src');
+}
   const items=(d.designs||[]).slice().reverse(),cats=[...new Set(items.map(x=>x.category))];
   function show(c){$('gallery').innerHTML='';
     items.filter(x=>c==='All'||x.category===c).slice(0,c==='All'?12:undefined).forEach(x=>{
       const k=document.createElement('div');k.className='card';
-      const i=document.createElement('img');i.className='zoom';i.src='/uploads/'+x.file;i.alt=x.title;i.loading='lazy';i.onclick=()=>op(i.src);
+      const i=document.createElement('img');i.className='zoom';i.src = imageUrl(x.file);i.alt=x.title;i.loading='lazy';i.onclick=()=>op(i.src);
       const t=document.createElement('div'),s=document.createElement('small'),h=document.createElement('h3');
       s.textContent=x.category.toUpperCase();h.textContent=x.title;t.append(s,h);k.append(i,t);$('gallery').append(k)});
     if(c==='All'&&items.length>12){const n=document.createElement('p');n.className='t';n.style.gridColumn='1/-1';n.textContent='Showing the latest 12 designs. Choose a category above to see more.';$('gallery').append(n)}
@@ -193,4 +210,3 @@ if(d.profile){const u='/uploads/'+d.profile;$('avatar').src=u;$('avatar').classL
 </script>
 <a href="https://wa.me/237651018413" target="_blank" rel="noopener" aria-label="Chat on WhatsApp" style="position:fixed;right:18px;bottom:18px;z-index:8;background:#25d366;color:#fff;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font-size:30px;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.4)">💬</a>
 </body></html>
-if(d.name), if(d.tagline), if(d.cover
